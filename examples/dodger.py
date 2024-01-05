@@ -5,15 +5,16 @@
 # Simplified BSD License, Copyright 2011 Al Sweigart
 import sys
 import os
-sys.path.append(os.path.abspath('..'))
+
+sys.path.append(os.path.abspath(".."))
 
 import pygame, random, time, pygcurse
 from pygame.locals import *
 
 GREEN = (0, 255, 0)
-BLACK = (0,0,0)
-WHITE = (255,255,255)
-RED = (255,0,0)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
 WINWIDTH = 40
 WINHEIGHT = 50
@@ -27,8 +28,9 @@ BADDIEMAXSPEED = 1
 ADDNEWBADDIERATE = 3
 
 win = pygcurse.PygcurseWindow(WINWIDTH, WINHEIGHT, fullscreen=False)
-pygame.display.set_caption('Pygcurse Dodger')
+pygame.display.set_caption("Pygcurse Dodger")
 win.autoupdate = False
+
 
 def main():
     showStartScreen()
@@ -42,7 +44,9 @@ def main():
             newGame = True
         if newGame:
             newGame = False
-            pygame.mouse.set_pos(win.centerx * win.cellwidth, (win.bottom - 4) * win.cellheight)
+            pygame.mouse.set_pos(
+                win.centerx * win.cellwidth, (win.bottom - 4) * win.cellheight
+            )
             mousex, mousey = pygame.mouse.get_pos()
             cellx, celly = win.getcoordinatesatpixel(mousex, mousey)
             baddies = []
@@ -62,32 +66,39 @@ def main():
         # add new baddies if needed
         if baddieAddCounter == ADDNEWBADDIERATE:
             speed = random.randint(BADDIEMAXSPEED, BADDIEMINSPEED)
-            baddies.append({'size': random.randint(BADDIEMINSIZE, BADDIEMAXSIZE),
-                            'speed': speed,
-                            'x': random.randint(0, win.width),
-                            'y': -BADDIEMAXSIZE,
-                            'movecounter': speed})
+            baddies.append(
+                {
+                    "size": random.randint(BADDIEMINSIZE, BADDIEMAXSIZE),
+                    "speed": speed,
+                    "x": random.randint(0, win.width),
+                    "y": -BADDIEMAXSIZE,
+                    "movecounter": speed,
+                }
+            )
             baddieAddCounter = 0
         else:
             baddieAddCounter += 1
 
-
         # move baddies down, remove if needed
-        for i in range(len(baddies)-1, -1, -1):
-            if baddies[i]['movecounter'] == 0:
-                baddies[i]['y'] += 1
-                baddies[i]['movecounter'] = baddies[i]['speed']
+        for i in range(len(baddies) - 1, -1, -1):
+            if baddies[i]["movecounter"] == 0:
+                baddies[i]["y"] += 1
+                baddies[i]["movecounter"] = baddies[i]["speed"]
             else:
-                baddies[i]['movecounter'] -= 1
+                baddies[i]["movecounter"] -= 1
 
-            if baddies[i]['y'] > win.height:
+            if baddies[i]["y"] > win.height:
                 del baddies[i]
-
 
         # check if hit
         if not gameOver:
             for baddie in baddies:
-                if cellx >= baddie['x'] and celly >= baddie['y'] and cellx < baddie['x']+baddie['size'] and celly < baddie['y']+baddie['size']:
+                if (
+                    cellx >= baddie["x"]
+                    and celly >= baddie["y"]
+                    and cellx < baddie["x"] + baddie["size"]
+                    and celly < baddie["y"] + baddie["size"]
+                ):
                     gameOver = True
                     gameOverTime = time.time()
                     break
@@ -95,16 +106,23 @@ def main():
 
         # draw baddies to screen
         for baddie in baddies:
-            win.fill('#', GREEN, BLACK, (baddie['x'], baddie['y'], baddie['size'], baddie['size']))
+            win.fill(
+                "#",
+                GREEN,
+                BLACK,
+                (baddie["x"], baddie["y"], baddie["size"], baddie["size"]),
+            )
 
         if not gameOver:
             playercolor = WHITE
         else:
             playercolor = RED
-            win.putchars('GAME OVER', win.centerx-4, win.centery, fgcolor=RED, bgcolor=BLACK)
+            win.putchars(
+                "GAME OVER", win.centerx - 4, win.centery, fgcolor=RED, bgcolor=BLACK
+            )
 
-        win.putchar('@', cellx, celly, playercolor)
-        win.putchars('Score: %s' % (score), win.width - 14, 1, fgcolor=WHITE)
+        win.putchar("@", cellx, celly, playercolor)
+        win.putchars("Score: %s" % (score), win.width - 14, 1, fgcolor=WHITE)
         win.update()
         mainClock.tick(FPS)
 
@@ -112,9 +130,14 @@ def main():
 def showStartScreen():
     while checkForKeyPress() is None:
         win.fill(bgcolor=BLACK)
-        win.putchars('Pygcurse Dodger', win.centerx-8, win.centery, fgcolor=TEXTCOLOR)
-        if int(time.time() * 2) % 2 == 0: # flashing
-            win.putchars('Press a key to start!', win.centerx-11, win.centery+1, fgcolor=TEXTCOLOR)
+        win.putchars("Pygcurse Dodger", win.centerx - 8, win.centery, fgcolor=TEXTCOLOR)
+        if int(time.time() * 2) % 2 == 0:  # flashing
+            win.putchars(
+                "Press a key to start!",
+                win.centerx - 11,
+                win.centery + 1,
+                fgcolor=TEXTCOLOR,
+            )
         win.update()
 
 
@@ -134,5 +157,6 @@ def terminate():
     pygame.quit()
     sys.exit()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -6,7 +6,8 @@
 # Simplified BSD License, Copyright 2011 Al Sweigart
 import sys
 import os
-sys.path.append(os.path.abspath('..'))
+
+sys.path.append(os.path.abspath(".."))
 
 import pygcurse, pygame, random, time
 from pygame.locals import *
@@ -14,20 +15,20 @@ from pygame.locals import *
 BLUE = (0, 0, 128)
 YELLOW = (255, 255, 0)
 GREEN = (0, 255, 0)
-BLACK = (0,0,0)
-RED = (255,0,0)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
 
-MAZE_WIDTH  = 41
+MAZE_WIDTH = 41
 MAZE_HEIGHT = 41
 FPS = 40
 
 win = pygcurse.PygcurseWindow(MAZE_WIDTH, MAZE_HEIGHT, fullscreen=False)
-pygame.display.set_caption('Pygcurse Maze')
+pygame.display.set_caption("Pygcurse Maze")
 win.autowindowupdate = False
 win.autoupdate = False
 
 
-class JoeWingMaze():
+class JoeWingMaze:
     # Maze generator in Python
     # Joe Wingbermuehle
     # 2010-10-06
@@ -40,7 +41,7 @@ class JoeWingMaze():
             height += 1
 
         # The size of the maze (must be odd).
-        self.width  = width
+        self.width = width
         self.height = height
 
         # The maze.
@@ -49,79 +50,81 @@ class JoeWingMaze():
         # Generate and display a random maze.
         self.init_maze()
         self.generate_maze()
-        #self.display_maze() # prints out the maze to stdout
+        # self.display_maze() # prints out the maze to stdout
 
     # Display the maze.
     def display_maze(self):
-       for y in range(0, self.height):
-          for x in range(0, self.width):
-             if self.maze[x][y] == 0:
-                sys.stdout.write(" ")
-             else:
-                sys.stdout.write("#")
-          sys.stdout.write("\n")
+        for y in range(0, self.height):
+            for x in range(0, self.width):
+                if self.maze[x][y] == 0:
+                    sys.stdout.write(" ")
+                else:
+                    sys.stdout.write("#")
+            sys.stdout.write("\n")
 
     # Initialize the maze.
     def init_maze(self):
-       for x in range(0, self.width):
-          self.maze[x] = dict()
-          for y in range(0, self.height):
-             self.maze[x][y] = 1
+        for x in range(0, self.width):
+            self.maze[x] = dict()
+            for y in range(0, self.height):
+                self.maze[x][y] = 1
 
     # Carve the maze starting at x, y.
     def carve_maze(self, x, y):
-       dir = random.randint(0, 3)
-       count = 0
-       while count < 4:
-          dx = 0
-          dy = 0
-          if   dir == 0:
-             dx = 1
-          elif dir == 1:
-             dy = 1
-          elif dir == 2:
-             dx = -1
-          else:
-             dy = -1
-          x1 = x + dx
-          y1 = y + dy
-          x2 = x1 + dx
-          y2 = y1 + dy
-          if x2 > 0 and x2 < self.width and y2 > 0 and y2 < self.height:
-             if self.maze[x1][y1] == 1 and self.maze[x2][y2] == 1:
-                self.maze[x1][y1] = 0
-                self.maze[x2][y2] = 0
-                self.carve_maze(x2, y2)
-          count = count + 1
-          dir = (dir + 1) % 4
+        dir = random.randint(0, 3)
+        count = 0
+        while count < 4:
+            dx = 0
+            dy = 0
+            if dir == 0:
+                dx = 1
+            elif dir == 1:
+                dy = 1
+            elif dir == 2:
+                dx = -1
+            else:
+                dy = -1
+            x1 = x + dx
+            y1 = y + dy
+            x2 = x1 + dx
+            y2 = y1 + dy
+            if x2 > 0 and x2 < self.width and y2 > 0 and y2 < self.height:
+                if self.maze[x1][y1] == 1 and self.maze[x2][y2] == 1:
+                    self.maze[x1][y1] = 0
+                    self.maze[x2][y2] = 0
+                    self.carve_maze(x2, y2)
+            count = count + 1
+            dir = (dir + 1) % 4
 
     # Generate the maze.
     def generate_maze(self):
-       random.seed()
-       #self.maze[1][1] = 0
-       self.carve_maze(1, 1)
-       #self.maze[1][0] = 0
-       #self.maze[self.width - 2][self.height - 1] = 0
+        random.seed()
+        # self.maze[1][1] = 0
+        self.carve_maze(1, 1)
+        # self.maze[1][0] = 0
+        # self.maze[self.width - 2][self.height - 1] = 0
 
-       # maze generator modified to have randomly placed entrance/exit.
-       startx = starty = endx = endy = 0
-       while self.maze[startx][starty]:
-           startx = random.randint(1, self.width-2)
-           starty = random.randint(1, self.height-2)
-       while self.maze[endx][endy] or endx == 0 or abs(startx - endx) < int(self.width / 3) or abs(starty - endy) < int(self.height / 3):
-           endx = random.randint(1, self.width-2)
-           endy = random.randint(1, self.height-2)
+        # maze generator modified to have randomly placed entrance/exit.
+        startx = starty = endx = endy = 0
+        while self.maze[startx][starty]:
+            startx = random.randint(1, self.width - 2)
+            starty = random.randint(1, self.height - 2)
+        while (
+            self.maze[endx][endy]
+            or endx == 0
+            or abs(startx - endx) < int(self.width / 3)
+            or abs(starty - endy) < int(self.height / 3)
+        ):
+            endx = random.randint(1, self.width - 2)
+            endy = random.randint(1, self.height - 2)
 
-       self.maze[startx][starty] = 0
-       self.maze[endx][endy] = 0
+        self.maze[startx][starty] = 0
+        self.maze[endx][endy] = 0
 
-       self.startx = startx
-       self.starty = starty
-       self.endx = endx
-       self.endy = endy
-
-
-
+        self.startx = startx
+        self.starty = starty
+        self.endx = endx
+        self.endy = endy
 
 
 def main():
@@ -132,7 +135,9 @@ def main():
     mainClock = pygame.time.Clock()
     while True:
         if newGame:
-            newGame = False # if you want to see something cool, change the False to True
+            newGame = (
+                False  # if you want to see something cool, change the False to True
+            )
             jwmaze = JoeWingMaze(MAZE_WIDTH, MAZE_HEIGHT)
             maze = jwmaze.maze
             solved = False
@@ -181,13 +186,29 @@ def main():
 
         # move the player (if allowed)
         if time.time() - 0.05 > lastmovetime:
-            if moveUp and isOnBoard(playerx, playery-1) and maze[playerx][playery-1] == 0:
+            if (
+                moveUp
+                and isOnBoard(playerx, playery - 1)
+                and maze[playerx][playery - 1] == 0
+            ):
                 playery -= 1
-            elif moveDown and isOnBoard(playerx, playery+1) and maze[playerx][playery+1] == 0:
+            elif (
+                moveDown
+                and isOnBoard(playerx, playery + 1)
+                and maze[playerx][playery + 1] == 0
+            ):
                 playery += 1
-            elif moveLeft and isOnBoard(playerx-1, playery) and maze[playerx-1][playery] == 0:
+            elif (
+                moveLeft
+                and isOnBoard(playerx - 1, playery)
+                and maze[playerx - 1][playery] == 0
+            ):
                 playerx -= 1
-            elif moveRight and isOnBoard(playerx+1, playery) and maze[playerx+1][playery] == 0:
+            elif (
+                moveRight
+                and isOnBoard(playerx + 1, playery)
+                and maze[playerx + 1][playery] == 0
+            ):
                 playerx += 1
 
             lastmovetime = time.time()
@@ -198,10 +219,10 @@ def main():
         drawMaze(win, maze, breadcrumbs)
         if solved:
             win.cursor = (win.centerx - 4, win.centery)
-            win.write('Solved!', fgcolor=YELLOW, bgcolor=RED)
+            win.write("Solved!", fgcolor=YELLOW, bgcolor=RED)
             moveLeft = moveRight = moveUp = moveDown = False
-        win.putchar('@', playerx, playery, RED, BLACK)
-        win.putchar('O', jwmaze.endx, jwmaze.endy, GREEN, BLACK)
+        win.putchar("@", playerx, playery, RED, BLACK)
+        win.putchar("O", jwmaze.endx, jwmaze.endy, GREEN, BLACK)
         win.update()
         pygame.display.update()
         mainClock.tick(FPS)
@@ -219,7 +240,8 @@ def drawMaze(win, maze, breadcrumbs):
             else:
                 win.paint(x, y, BLACK)
             if (x, y) in breadcrumbs:
-                win.putchar('.', x, y, RED, BLACK)
+                win.putchar(".", x, y, RED, BLACK)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

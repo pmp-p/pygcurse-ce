@@ -2502,19 +2502,18 @@ def _ismonofont(font):
 
 def getpygamecolor(value):
     """Returns a pygame.Color object of the argument passed in. The argument can be a RGB/RGBA tuple, pygame.Color object, or string in the colornames dict (such as 'blue' or 'gray')."""
-    if type(value) in (tuple, list):
-        alpha = len(value) > 3 and value[3] or 255
-        return pygame.Color(value[0], value[1], value[2], alpha)
-    elif str(type(value)) in ("<class 'pygame.Color'>", "<type 'pygame.Color'>"):
+    if isinstance(value, pygame.color.Color):
         return value
-    elif value in colornames:
-        return colornames[value]
-    else:
-        raise Exception('Color set to invalid value: %s' % (repr(value)))
 
-    if type(color) in (tuple, list):
-        return pygame.Color(*color)
-    return color
+    if isinstance(value, (tuple, list) ):
+        alpha = len(value) > 3 and value[3] or 255
+        return pygame.color.Color(value[0], value[1], value[2], alpha)
+
+    try:
+        if value in colornames:
+            return colornames[value]
+    except TypeError:
+        raise Exception('Color set to invalid value: %s' % (repr(value)))
 
 def waitforkeypress(fps=None):
     # Go through event queue looking for a KEYUP event.
