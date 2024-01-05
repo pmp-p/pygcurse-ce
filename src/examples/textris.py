@@ -1,10 +1,25 @@
 # Textris (a Tetris clone)
 # By Al Sweigart al@inventwithpython.com
 # Simplified BSD License, Copyright 2011 Al Sweigart
+# modification pygame-web for pygame-ce+web
+
+
+# /// pyproject
+# [project]
+# name = "pygcurse"
+# version = "2024"
+# description = "embed pygame in Panda3D webgl surface"
+# readme = {file = "README.txt", content-type = "text/markdown"}
+# requires-python = ">=3.11"
+#
+# dependencies = [
+#  "pygame-ce",
+# ]
+# ///
+
+import asyncio
 import sys
 import os
-
-sys.path.append(os.path.abspath(".."))
 
 import random, time, pygame
 import pygcurse as pygcurse
@@ -116,40 +131,6 @@ for p in PIECES:  # loop through each piece
         PIECES[p][r] = shapeData
 
 
-def main():
-    global FPSCLOCK, WINDOWSURF, BOARDBOX
-    pygame.init()
-    FPSCLOCK = pygame.time.Clock()
-    WINDOWSURF = pygcurse.PygcurseWindow(
-        WINDOWWIDTH, WINDOWHEIGHT, "Textris", font=pygame.font.Font(None, 24)
-    )
-    WINDOWSURF.autoupdate = False
-    BOARDBOX = pygcurse.PygcurseTextbox(
-        WINDOWSURF, (LEFTMARGIN - 1, TOPMARGIN - 1, BOARDWIDTH + 2, BOARDHEIGHT + 2)
-    )
-
-    showTextScreen("Textris")
-    while True:  # main game loop
-        runGame()
-        showTextScreen("Game Over")
-
-
-def showTextScreen(text):
-    # This function displays large text in the
-    # center of the screen until a key is pressed.
-    WINDOWSURF.setscreencolors("white", "black", True)
-    WINDOWSURF.cursor = WINDOWSURF.centerx - int(len(text) / 2), WINDOWSURF.centery
-    WINDOWSURF.write(str(text), fgcolor=WHITE)
-
-    WINDOWSURF.cursor = (
-        WINDOWSURF.centerx - int(len("Press a key to continue.") / 2),
-        WINDOWSURF.centery + 4,
-    )
-    WINDOWSURF.write("Press a key to continue.", fgcolor="gray")
-
-    while checkForKeyPress() == None:
-        WINDOWSURF.update()
-        FPSCLOCK.tick()
 
 
 def terminate():
@@ -157,143 +138,6 @@ def terminate():
     sys.exit()
 
 
-def runGame():
-    # setup variables for the start of the game
-    board = getNewBoard()
-    lastMoveDownTime = time.time()
-    lastMoveSidewaysTime = time.time()
-    lastFallTime = time.time()
-    movingDown = False  # note: there is no movingUp variable
-    movingLeft = False
-    movingRight = False
-    score = 0
-    level, fallFreq = calculateLevelAndFallFreq(score)
-
-    currentPiece = getNewPiece()
-    nextPiece = getNewPiece()
-
-    while True:  # main game loop
-        if currentPiece == None:
-            # No current piece in play, so start a new piece at the top
-            currentPiece = nextPiece
-            nextPiece = getNewPiece()
-            lastFallTime = time.time()  # reset lastFallTime
-
-            if not isValidPosition(board, currentPiece):
-                return  # can't fit a new piece on the board, so game over
-
-        checkForQuit()
-        for event in pygame.event.get():  # event handling loop
-            if event.type == KEYUP:
-                if event.key == K_p:
-                    # Pausing the game
-                    WINDOWSURF.fill(BGCOLOR)
-                    showTextScreen("Paused")  # pause until a key press
-                    lastFallTime = time.time()
-                    lastMoveDownTime = time.time()
-                    lastMoveSidewaysTime = time.time()
-                elif event.key == K_LEFT or event.key == K_a:
-                    movingLeft = False
-                elif event.key == K_RIGHT or event.key == K_d:
-                    movingRight = False
-                elif event.key == K_DOWN or event.key == K_s:
-                    movingDown = False
-
-            elif event.type == KEYDOWN:
-                # moving the block sideways
-                if (event.key == K_LEFT or event.key == K_a) and isValidPosition(
-                    board, currentPiece, adjX=-1
-                ):
-                    currentPiece["x"] -= 1
-                    lastMoveSidewaysTime = time.time()
-                    movingLeft = True
-                    movingRight = False
-                    lastMoveSidewaysTime = time.time()
-                elif (event.key == K_RIGHT or event.key == K_d) and isValidPosition(
-                    board, currentPiece, adjX=1
-                ):
-                    currentPiece["x"] += 1
-                    movingRight = True
-                    movingLeft = False
-                    lastMoveSidewaysTime = time.time()
-
-                # rotating the block (if there is room to rotate)
-                elif event.key == K_UP or event.key == K_w:
-                    currentPiece["rotation"] = (currentPiece["rotation"] + 1) % len(
-                        PIECES[currentPiece["shape"]]
-                    )
-                    if not isValidPosition(board, currentPiece):
-                        currentPiece["rotation"] = (currentPiece["rotation"] - 1) % len(
-                            PIECES[currentPiece["shape"]]
-                        )
-                elif event.key == K_q:  # rotate the other direction
-                    currentPiece["rotation"] = (currentPiece["rotation"] - 1) % len(
-                        PIECES[currentPiece["shape"]]
-                    )
-                    if not isValidPosition(board, currentPiece):
-                        currentPiece["rotation"] = (currentPiece["rotation"] + 1) % len(
-                            PIECES[currentPiece["shape"]]
-                        )
-
-                # making the block fall faster with the down key
-                elif event.key == K_DOWN or event.key == K_s:
-                    movingDown = True
-                    if isValidPosition(board, currentPiece, adjY=1):
-                        currentPiece["y"] += 1
-                    lastMoveDownTime = time.time()
-
-                # move the current block all the way down
-                elif event.key == K_SPACE:
-                    movingDown = False
-                    movingLeft = False
-                    movingRight = False
-                    for i in range(1, BOARDHEIGHT):
-                        if not isValidPosition(board, currentPiece, adjY=i):
-                            break
-                    currentPiece["y"] += i - 1
-
-        # handle moving the block because of user input
-        if (
-            movingLeft or movingRight
-        ) and time.time() - lastMoveSidewaysTime > MOVESIDEWAYSFREQ:
-            if movingLeft and isValidPosition(board, currentPiece, adjX=-1):
-                currentPiece["x"] -= 1
-            elif movingRight and isValidPosition(board, currentPiece, adjX=1):
-                currentPiece["x"] += 1
-            lastMoveSidewaysTime = time.time()
-
-        if (
-            movingDown
-            and time.time() - lastMoveDownTime > MOVEDOWNFREQ
-            and isValidPosition(board, currentPiece, adjY=1)
-        ):
-            currentPiece["y"] += 1
-            lastMoveDownTime = time.time()
-
-        # let the piece fall if it is time to fall
-        if time.time() - lastFallTime > fallFreq:
-            # see if the piece has hit the bottom
-            if hasHitBottom(board, currentPiece):
-                # set the piece on the board, and update game info
-                addToBoard(board, currentPiece)
-                score += removeCompleteLines(board)
-                level, fallFreq = calculateLevelAndFallFreq(score)
-                currentPiece = None
-            else:
-                # just move the block down
-                currentPiece["y"] += 1
-                lastFallTime = time.time()
-
-        # drawing everything on the screen
-        WINDOWSURF.setscreencolors(clear=True)
-        drawBoard(board)
-        drawStatus(score, level)
-        drawNextPiece(nextPiece)
-        if currentPiece != None:
-            drawPiece(currentPiece)
-
-        WINDOWSURF.update()
-        FPSCLOCK.tick(FPS)
 
 
 def checkForQuit():
@@ -481,5 +325,184 @@ def drawPiece(piece, cellx=None, celly=None):
                 drawBox(None, None, piece["color"], cellx + x, celly + y)
 
 
+
+
+
+async def showTextScreen(text):
+    # This function displays large text in the
+    # center of the screen until a key is pressed.
+    WINDOWSURF.setscreencolors("white", "black", True)
+    WINDOWSURF.cursor = WINDOWSURF.centerx - int(len(text) / 2), WINDOWSURF.centery
+    WINDOWSURF.write(str(text), fgcolor=WHITE)
+
+    WINDOWSURF.cursor = (
+        WINDOWSURF.centerx - int(len("Press a key to continue.") / 2),
+        WINDOWSURF.centery + 4,
+    )
+    WINDOWSURF.write("Press a key to continue.", fgcolor="gray")
+
+    while checkForKeyPress() == None:
+        WINDOWSURF.update()
+        FPSCLOCK.tick()
+        await asyncio.sleep(0)
+
+
+async def main():
+    global FPSCLOCK, WINDOWSURF, BOARDBOX
+    pygame.init()
+    FPSCLOCK = pygame.time.Clock()
+    WINDOWSURF = pygcurse.PygcurseWindow(
+        WINDOWWIDTH, WINDOWHEIGHT, "Textris", font=pygame.font.Font(None, 24)
+    )
+    WINDOWSURF.autoupdate = False
+    BOARDBOX = pygcurse.PygcurseTextbox(
+        WINDOWSURF, (LEFTMARGIN - 1, TOPMARGIN - 1, BOARDWIDTH + 2, BOARDHEIGHT + 2)
+    )
+
+    await showTextScreen("Textris")
+
+    # setup variables for the start of the game
+    board = getNewBoard()
+    lastMoveDownTime = time.time()
+    lastMoveSidewaysTime = time.time()
+    lastFallTime = time.time()
+    movingDown = False  # note: there is no movingUp variable
+    movingLeft = False
+    movingRight = False
+    score = 0
+    level, fallFreq = calculateLevelAndFallFreq(score)
+
+    currentPiece = getNewPiece()
+    nextPiece = getNewPiece()
+
+    while True:  # main game loop
+        if currentPiece == None:
+            # No current piece in play, so start a new piece at the top
+            currentPiece = nextPiece
+            nextPiece = getNewPiece()
+            lastFallTime = time.time()  # reset lastFallTime
+
+            if not isValidPosition(board, currentPiece):
+                return  # can't fit a new piece on the board, so game over
+
+        checkForQuit()
+        for event in pygame.event.get():  # event handling loop
+            if event.type == KEYUP:
+                if event.key == K_p:
+                    # Pausing the game
+                    WINDOWSURF.fill(BGCOLOR)
+                    showTextScreen("Paused")  # pause until a key press
+                    lastFallTime = time.time()
+                    lastMoveDownTime = time.time()
+                    lastMoveSidewaysTime = time.time()
+                elif event.key == K_LEFT or event.key == K_a:
+                    movingLeft = False
+                elif event.key == K_RIGHT or event.key == K_d:
+                    movingRight = False
+                elif event.key == K_DOWN or event.key == K_s:
+                    movingDown = False
+
+            elif event.type == KEYDOWN:
+                # moving the block sideways
+                if (event.key == K_LEFT or event.key == K_a) and isValidPosition(
+                    board, currentPiece, adjX=-1
+                ):
+                    currentPiece["x"] -= 1
+                    lastMoveSidewaysTime = time.time()
+                    movingLeft = True
+                    movingRight = False
+                    lastMoveSidewaysTime = time.time()
+                elif (event.key == K_RIGHT or event.key == K_d) and isValidPosition(
+                    board, currentPiece, adjX=1
+                ):
+                    currentPiece["x"] += 1
+                    movingRight = True
+                    movingLeft = False
+                    lastMoveSidewaysTime = time.time()
+
+                # rotating the block (if there is room to rotate)
+                elif event.key == K_UP or event.key == K_w:
+                    currentPiece["rotation"] = (currentPiece["rotation"] + 1) % len(
+                        PIECES[currentPiece["shape"]]
+                    )
+                    if not isValidPosition(board, currentPiece):
+                        currentPiece["rotation"] = (currentPiece["rotation"] - 1) % len(
+                            PIECES[currentPiece["shape"]]
+                        )
+                elif event.key == K_q:  # rotate the other direction
+                    currentPiece["rotation"] = (currentPiece["rotation"] - 1) % len(
+                        PIECES[currentPiece["shape"]]
+                    )
+                    if not isValidPosition(board, currentPiece):
+                        currentPiece["rotation"] = (currentPiece["rotation"] + 1) % len(
+                            PIECES[currentPiece["shape"]]
+                        )
+
+                # making the block fall faster with the down key
+                elif event.key == K_DOWN or event.key == K_s:
+                    movingDown = True
+                    if isValidPosition(board, currentPiece, adjY=1):
+                        currentPiece["y"] += 1
+                    lastMoveDownTime = time.time()
+
+                # move the current block all the way down
+                elif event.key == K_SPACE:
+                    movingDown = False
+                    movingLeft = False
+                    movingRight = False
+                    for i in range(1, BOARDHEIGHT):
+                        if not isValidPosition(board, currentPiece, adjY=i):
+                            break
+                    currentPiece["y"] += i - 1
+
+        # handle moving the block because of user input
+        if (
+            movingLeft or movingRight
+        ) and time.time() - lastMoveSidewaysTime > MOVESIDEWAYSFREQ:
+            if movingLeft and isValidPosition(board, currentPiece, adjX=-1):
+                currentPiece["x"] -= 1
+            elif movingRight and isValidPosition(board, currentPiece, adjX=1):
+                currentPiece["x"] += 1
+            lastMoveSidewaysTime = time.time()
+
+        if (
+            movingDown
+            and time.time() - lastMoveDownTime > MOVEDOWNFREQ
+            and isValidPosition(board, currentPiece, adjY=1)
+        ):
+            currentPiece["y"] += 1
+            lastMoveDownTime = time.time()
+
+        # let the piece fall if it is time to fall
+        if time.time() - lastFallTime > fallFreq:
+            # see if the piece has hit the bottom
+            if hasHitBottom(board, currentPiece):
+                # set the piece on the board, and update game info
+                addToBoard(board, currentPiece)
+                score += removeCompleteLines(board)
+                level, fallFreq = calculateLevelAndFallFreq(score)
+                currentPiece = None
+            else:
+                # just move the block down
+                currentPiece["y"] += 1
+                lastFallTime = time.time()
+
+        # drawing everything on the screen
+        WINDOWSURF.setscreencolors(clear=True)
+        drawBoard(board)
+        drawStatus(score, level)
+        drawNextPiece(nextPiece)
+        if currentPiece != None:
+            drawPiece(currentPiece)
+
+        WINDOWSURF.update()
+        FPSCLOCK.tick(FPS)
+
+        await asyncio.sleep(0)
+
+    await showTextScreen("Game Over")
+
+
+
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
